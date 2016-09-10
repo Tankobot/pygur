@@ -1,4 +1,4 @@
-"""Interact with images on Imgur."""
+"""Interact with online images."""
 
 from re import compile as regex
 from io import FileIO
@@ -6,8 +6,8 @@ from typing import Union
 from collections import namedtuple
 from pathlib import Path
 import requests
-from html.parser import HTMLParser
 from visual import progress_bar
+from htget import MetaGet
 
 
 VALID_TAG = regex(r'^\w+$')
@@ -19,46 +19,8 @@ SOURCE = 'https://i.imgur.com/%s.png'  # any file extension will work
 Resolution = namedtuple('Resolution', 'x y')
 
 
-class HTMLMetaParser(HTMLParser):
-    """Translate the head section of an html document into a dictionary."""
-
-    def __init__(self, response: requests.Response):
-        super().__init__()
-        self.meta = {}  # type: dict[str]
-        self._response = response
-        self._head = True
-
-    def handle_starttag(self, tag, attrs):
-        if tag == 'meta':
-            name = None
-            value = None
-            for pair in attrs:
-                if pair[0] in {
-                    'name',
-                    'property'
-                }:
-                    name = pair[1]  # type: str
-                elif pair[0] == 'content':
-                    value = pair[1]  # type: str
-            if name and value:
-                self.meta[name.lower()] = value
-
-    def handle_data(self, data):
-        pass
-
-    def handle_endtag(self, tag):
-        if tag == 'head':
-            self._head = False
-
-    def all(self, chunk_size: int) -> dict:
-        for chunk in self._response.iter_content(chunk_size, True):
-            self.feed(chunk)
-            if not self._head:
-                break
-        return self.meta
-
-    def error(self, message):
-        pass
+class Error(Exception):
+    pass
 
 
 class Image:
@@ -73,6 +35,8 @@ class Image:
         self._source = SOURCE % tag
         self._meta = None  # metadata can be retrieved later
 
+    META = []  # type: list[property]
+
     @property
     def tag(self):
         return self._tag
@@ -83,40 +47,53 @@ class Image:
         if self._meta:
             return self._meta
         else:
-            mask = {'User-Agent': 'Mozilla/5.0 Firefox/48.0'}
+            mask = {'User-Agent': 'Mozilla/5.0 Firefox/48.0'}  # spoof user-agent
             response = requests.get(self._html, headers=mask, stream=True)
-            self._meta = HTMLMetaParser(response).all(2**10)
+            self._meta = MetaGet(response).all(2 ** 10)
+
+            try:
+                for p in self.META:
+                    p.fget()
+            except KeyError:
+                raise Error('unable to get metadata %r' % self._tag) from None
+
             return self._meta
 
     @property
     def keywords(self) -> list:
         """List of the image's keywords."""
         return self.meta['keywords'].split(', ')
+    META.append(keywords)
 
     @property
     def description(self) -> str:
         """Imgur image description."""
         return self.meta['description']
+    META.append(description)
 
     @property
     def copyright(self) -> str:
         """Imgur copyright notice."""
         return self.meta['copyright']
+    META.append(copyright)
 
     @property
     def url(self) -> str:
         """Html link provided by Imgur."""
         return self.meta['og:url']
+    META.append(url)
 
     @property
     def title(self) -> str:
         """Imgur image title."""
         return self.meta['og:title']
+    META.append(title)
 
     @property
     def author(self) -> str:
         """Imgur image author."""
         return self.meta['article:author']
+    META.append(author)
 
     @property
     def resolution(self) -> Resolution:
@@ -124,11 +101,13 @@ class Image:
         x = int(self.meta['og:image:width'])
         y = int(self.meta['og:image:height'])
         return Resolution(x, y)
+    META.append(resolution)
 
     @property
     def extension(self) -> str:
         """Image file extension not including period prefix."""
         return EXTENSION.search(self.meta['twitter:image']).group(0)[1:]
+    META.append(extension)
 
     def save(self, file: FileIO, close=False):
         """Write the image from Imgur to a file object."""
@@ -185,3 +164,25 @@ class Image:
 
         progress_bar(self.to_file(place, meta, pro=True))
         print('Image saved.')
+
+
+def main():
+    from argparse import ArgumentParser
+    parser = ArgumentParser(description='Download images from Imgur.')
+    parser.add_argument('tags', nargs='+', help='Images to download by tag.')
+    parser.add_argument('-o', '--output', default='', help='Set output directory.')
+    args = parser.parse_args()
+
+    for tag in args.tags:
+        if not VALID_TAG.match(tag):
+            raise ValueError('invalid tag %r' % tag)
+
+    for tag in args.tags:
+        try:
+            Image(tag).easy(str(Path(args.output) / '%(tag)s.%(ext)s'), meta=True)
+        except Error as e:
+            print('Error: %s' % e)
+
+
+if __name__ == '__main__':
+    main()
