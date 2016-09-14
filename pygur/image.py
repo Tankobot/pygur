@@ -1,13 +1,13 @@
 """Interact with online images."""
 
+from pygur.visual import progress_bar
+from pygur.htget import Meta
 from re import compile as regex
-from io import FileIO
-from typing import Union
-from collections import namedtuple
-from pathlib import Path
 import requests
-from visual import progress_bar
-from htget import MetaGet
+from collections import namedtuple
+from io import FileIO
+from pathlib import Path
+from typing import Union, List
 
 
 VALID_TAG = regex(r'^\w+$')
@@ -33,67 +33,32 @@ class Image:
         self._tag = tag
         self._html = HTML % tag
         self._source = SOURCE % tag
-        self._meta = None  # metadata can be retrieved later
 
-    META = []  # type: list[property]
+        # get metadata
+        response = requests.get(self._html, headers=self.mask, stream=True)
+        self.meta = Meta(response).all(2 ** 10)
+
+        try:
+            # make sure all required metadata is present
+            for p in self.META:
+                p.fget()
+        except KeyError as e:
+            raise Error('unable to get metadata (%s) from %r' % (e.args[0], tag)) from None
+
+    # help ensure correct html response
+    mask = {'User-Agent': 'Mozilla/5.0 Firefox/48.0'}
+    # track required metadata
+    META = []  # type: List[property]
 
     @property
     def tag(self):
         return self._tag
 
     @property
-    def meta(self) -> dict:
-        """Retrieve metadata from Imgur."""
-        if self._meta:
-            return self._meta
-        else:
-            mask = {'User-Agent': 'Mozilla/5.0 Firefox/48.0'}  # spoof user-agent
-            response = requests.get(self._html, headers=mask, stream=True)
-            self._meta = MetaGet(response).all(2 ** 10)
-
-            try:
-                for p in self.META:
-                    p.fget()
-            except KeyError:
-                raise Error('unable to get metadata %r' % self._tag) from None
-
-            return self._meta
-
-    @property
-    def keywords(self) -> list:
-        """List of the image's keywords."""
-        return self.meta['keywords'].split(', ')
-    META.append(keywords)
-
-    @property
-    def description(self) -> str:
-        """Imgur image description."""
-        return self.meta['description']
-    META.append(description)
-
-    @property
-    def copyright(self) -> str:
-        """Imgur copyright notice."""
-        return self.meta['copyright']
-    META.append(copyright)
-
-    @property
-    def url(self) -> str:
-        """Html link provided by Imgur."""
-        return self.meta['og:url']
-    META.append(url)
-
-    @property
     def title(self) -> str:
         """Imgur image title."""
         return self.meta['og:title']
     META.append(title)
-
-    @property
-    def author(self) -> str:
-        """Imgur image author."""
-        return self.meta['article:author']
-    META.append(author)
 
     @property
     def resolution(self) -> Resolution:
@@ -109,7 +74,14 @@ class Image:
         return EXTENSION.search(self.meta['twitter:image']).group(0)[1:]
     META.append(extension)
 
-    def save(self, file: FileIO, close=False):
+    # url might be unnecessary, consider removal
+    @property
+    def url(self) -> str:
+        """Html link provided by Imgur."""
+        return self.meta['og:url']
+    META.append(url)
+
+    def save(self, file: FileIO, close=False, chunk_size=2**10):
         """Write the image from Imgur to a file object."""
 
         r = requests.get(self._source, stream=True)
@@ -124,7 +96,7 @@ class Image:
         done = 0
 
         # download image and return progress
-        for chunk in r.iter_content(2**10):
+        for chunk in r.iter_content(chunk_size):
             file.write(chunk)
             done += len(chunk)
             yield done / size if pro else 1
@@ -145,7 +117,6 @@ class Image:
             meta = {
                 'tag': self.tag,
                 'title': self.title,
-                'author': self.author,
                 'x': self.resolution.x,
                 'y': self.resolution.y,
                 'ext': self.extension

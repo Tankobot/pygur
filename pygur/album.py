@@ -1,7 +1,7 @@
 """Interact with online albums."""
 
+from pygur.htget import Getter
 from re import compile as regex
-from image import Image
 
 
 VALID_TAG = regex(r'^\w+$')
@@ -15,7 +15,7 @@ class Error(Exception):
 class Album:
     """Perform operations on Imgur album."""
 
-    def __init__(self, tag: str):
+    def __init__(self, tag: str, get_images=False):
         """Initialize Album object."""
 
         if not VALID_TAG.match(tag):
@@ -23,3 +23,7 @@ class Album:
 
         self._tag = tag
         self._html = HTML % tag
+
+
+class InfoAlbum(Getter):
+    pass
