@@ -69,9 +69,10 @@ class InfoAlbum(Meta):
         self.tags = []
 
     def start_div(self, attrs):
-        if ('class', 'post-image-container') in attrs:
-            d = {k: v for k, v in attrs}
-            self.tags.append(d['id'])
+        d = {k: v for k, v in attrs}
+        if 'class' in d:
+            if 'post-image-container' in d['class']:
+                self.tags.append(d['id'])
 
 
 def main(what=None, program=None):
