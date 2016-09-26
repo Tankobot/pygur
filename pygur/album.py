@@ -42,6 +42,10 @@ class Album:
         self._tag = tag
         self._html = HTML % tag
 
+    @property
+    def tag(self):
+        return self._tag
+
     # borrow image method
     __repr__ = Image.__repr__
 
@@ -78,6 +82,8 @@ class InfoAlbum(Meta):
 def main(what=None, program=None):
     from pathlib import Path
     from argparse import ArgumentParser
+    from json import dump
+
     parser = ArgumentParser(prog=program,
                             description='Download albums from Imgur.')
     parser.add_argument('tag', help='Album to download by tag.')
@@ -86,6 +92,7 @@ def main(what=None, program=None):
                         help='Pattern for file names.')
     parser.add_argument('-s', '--start', default=0, type=int, help='Start index.')
     parser.add_argument('-e', '--end', default=-1, type=int, help='End index.')
+    parser.add_argument('-m', '--meta', action='store_true', help='place meta data file in directory')
     args = parser.parse_args(what)
 
     print(args.tag)
@@ -104,6 +111,13 @@ def main(what=None, program=None):
 
     if not path.exists():
         path.mkdir()
+
+    if args.meta:
+        with (path / '.meta').open('w') as file:
+            dump({
+                'title': album.title,
+                'tag': album.tag
+            }, file, indent=4)
 
     count = 0
     for i, img in enumerate(album.images):
