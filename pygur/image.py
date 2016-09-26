@@ -33,22 +33,30 @@ class Image:
         self._tag = tag
         self._html = HTML % tag
         self._source = SOURCE % tag
+        self._meta = None
 
-        # get metadata
-        response = requests.get(self._html, headers=self.mask, stream=True)
-        self.meta = Meta(response).all(2 ** 10)
-
-        try:
-            # make sure all required metadata is present
-            for p in self.META:
-                p.fget()
-        except KeyError as e:
-            raise Error('unable to get metadata (%s) from %r' % (e.args[0], tag)) from None
+    def __repr__(self):
+        return self.__class__.__name__ + ('(%r)' % self._tag)
 
     # help ensure correct html response
     mask = {'User-Agent': 'Mozilla/5.0 Firefox/48.0'}
     # track required metadata
     META = []  # type: List[property]
+
+    @property
+    def meta(self):
+        if self._meta is None:
+            response = requests.get(self._html, headers=self.mask, stream=True)
+            self._meta = Meta(response).all(2 ** 10)
+
+            try:
+                # make sure all required metadata is present
+                for p in self.META:
+                    p.fget(self)
+            except KeyError as e:
+                raise Error('unable to get metadata (%s) from %r' % (e.args[0], self._tag)) from None
+
+        return self._meta
 
     @property
     def tag(self):
@@ -130,19 +138,18 @@ class Image:
 
         return self.save(place.open('wb'), close=True)
 
-    def easy(self, place: str = None, meta=None):
+    def easy(self, place: Union[Path, str] = None, meta=None):
         """Evaluate generator."""
-
         progress_bar(self.to_file(place, meta, pro=True))
-        print('Image saved.')
 
 
-def main():
+def main(what=None, program=None):
     from argparse import ArgumentParser
-    parser = ArgumentParser(description='Download images from Imgur.')
+    parser = ArgumentParser(prog=program,
+                            description='Download images from Imgur.')
     parser.add_argument('tags', nargs='+', help='Images to download by tag.')
     parser.add_argument('-o', '--output', default='', help='Set output directory.')
-    args = parser.parse_args()
+    args = parser.parse_args(what)
 
     for tag in args.tags:
         if not VALID_TAG.match(tag):

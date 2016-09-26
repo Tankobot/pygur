@@ -24,7 +24,7 @@ class Getter(HTMLParser):
         log.debug('html getter bound to %r', response)
         super().__init__()
         self._response = response
-        self._element = []
+        self._element = ['']
         self._next = None
 
     def __repr__(self):
