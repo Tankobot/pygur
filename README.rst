@@ -4,8 +4,9 @@ Unofficial Python Imgur Utility Library
 
 Installation
 ------------
-Run this pip command in your terminal:
-`$ pip install git+https://github.com/Tankobot/pygur.git`
+Run this pip command in your terminal::
+
+    $ pip install git+https://github.com/Tankobot/pygur.git
 
 License
 -------
