@@ -12,6 +12,16 @@ SHRINK = regex(r'[\s-]+')
 HTML = 'https://imgur.com/a/%s/layout/blog'
 
 
+class ANSI:
+    @staticmethod
+    def up(n=1):
+        print('\033[%sA' % n, end='')
+
+    @staticmethod
+    def erase_line():
+        print('\033[K', end='')
+
+
 class Error(Exception):
     pass
 
@@ -79,6 +89,17 @@ class InfoAlbum(Meta):
                 self.tags.append(d['id'])
 
 
+def key_wrap(f):
+    def g(*args, **kwargs):
+        try:
+            f(*args, **kwargs)
+        except KeyboardInterrupt:
+            print(' !!! KEYBOARD INTERRUPT !!! ')
+            print(' Partially downloaded files are likely corrupted. ')
+    return g
+
+
+@key_wrap
 def main(what=None, program=None):
     from pathlib import Path
     from argparse import ArgumentParser
@@ -93,6 +114,8 @@ def main(what=None, program=None):
     parser.add_argument('-s', '--start', default=0, type=int, help='Start index.')
     parser.add_argument('-e', '--end', default=-1, type=int, help='End index.')
     parser.add_argument('-m', '--meta', action='store_true', help='place meta data file in directory')
+    parser.add_argument('-a', '--no-ansi', action='store_false', dest='ansi',
+                        help='disable ansi escape codes')
     args = parser.parse_args(what)
 
     print(args.tag)
@@ -134,8 +157,15 @@ def main(what=None, program=None):
         }
 
         print('Downloading image %r: %s' % (i, img.title))
+        if args.ansi:
+            print('Percent of album: %6.2f%%' % (100 * i / len(album.images)))
         img.easy(path / (args.format % form))
         count += 1
+
+        if args.ansi:
+            for _ in range(4):
+                ANSI.up()
+                ANSI.erase_line()
 
     print('Finished downloading %r images.' % count)
 
