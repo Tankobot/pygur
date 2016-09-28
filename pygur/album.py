@@ -116,6 +116,7 @@ def main(what=None, program=None):
     parser.add_argument('-m', '--meta', action='store_true', help='place meta data file in directory')
     parser.add_argument('-a', '--no-ansi', action='store_false', dest='ansi',
                         help='disable ansi escape codes')
+    parser.add_argument('-d', '--power', default=3, type=int, help='width of index')
     args = parser.parse_args(what)
 
     print(args.tag)
@@ -152,7 +153,7 @@ def main(what=None, program=None):
         assert isinstance(img, Image)
         form = {
             'tag': img.tag,
-            'index': '0' * (3 - len(str(i))) + str(i),
+            'index': '0' * (args.power - len(str(i))) + str(i),
             'ext': img.extension
         }
 
