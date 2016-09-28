@@ -48,6 +48,7 @@ class Image:
         if self._meta is None:
             response = requests.get(self._html, headers=self.mask, stream=True)
             self._meta = Meta(response).all(2 ** 10)
+            response.close()
 
             try:
                 # make sure all required metadata is present

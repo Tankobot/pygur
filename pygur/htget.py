@@ -89,6 +89,7 @@ class Getter(HTMLParser):
         log.debug('handling entire html response %r', self)
         for chunk in self._response.iter_content(chunk_size, True):
             self.feed(chunk)
+        self._response.close()
         self.close()
         log.debug('finished html response %r', self)
 
