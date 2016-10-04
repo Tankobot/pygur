@@ -109,7 +109,7 @@ def key_wrap(f):
 def main(what=None, program=None):
     from pathlib import Path
     from argparse import ArgumentParser
-    from json import dump
+    from json import dump, load
 
     parser = ArgumentParser(prog=program,
                             description='Download albums from Imgur.')
@@ -119,10 +119,13 @@ def main(what=None, program=None):
                         help='Pattern for file names.')
     parser.add_argument('-s', '--start', default=0, type=int, help='Start index.')
     parser.add_argument('-e', '--end', default=-1, type=int, help='End index.')
-    parser.add_argument('-m', '--meta', action='store_true', help='place meta data file in directory')
     parser.add_argument('-a', '--no-ansi', action='store_false', dest='ansi',
                         help='disable ansi escape codes')
     parser.add_argument('-d', '--power', default=3, type=int, help='width of index')
+
+    # meta information options
+    parser.add_argument('-m', '--meta', action='store_true', help='place meta data file in directory')
+    parser.add_argument('--author', default='<unknown>', help='title of the album')
     args = parser.parse_args(what)
 
     print(args.tag)
@@ -143,11 +146,19 @@ def main(what=None, program=None):
         path.mkdir()
 
     if args.meta:
-        with (path / '.meta').open('w') as file:
+        m_path = path / '.meta'
+        if m_path.exists():
+            with m_path.open() as file:
+                m_d = load(file)
+        else:
+            m_d = {}
+
+        with m_path.open('w') as file:
             dump({
                 'title': album.title,
+                'author': args.author,
                 'tag': album.tag
-            }, file, indent=4)
+            }.update(m_d), file, indent=4, sort_keys=True)
 
     count = 0
     for i, img in enumerate(album.images):

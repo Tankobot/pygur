@@ -4,7 +4,7 @@ from .image import Image
 
 __author__ = 'Michael Bradley <michael@sigm.io>'
 __copyright__ = 'GNU General Public License v3'
-VERSION = (0, 3, 0)  # semantic version
+VERSION = (0, 3, 1)  # semantic version
 __version__ = '.'.join(map(str, VERSION))  # "major.minor.patch"
 
 
@@ -13,7 +13,7 @@ def main():
     from sys import argv
 
     parser = ArgumentParser(prog='pygur', description='Unofficial Python Imgur Utility')
-    parser.add_argument('mode', help='operation mode: image or album')
+    parser.add_argument('mode', help='operation mode: image, album, or tag')
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__,
                         help='display version information and exit')
     args = parser.parse_args(argv[1:2])
