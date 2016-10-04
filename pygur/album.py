@@ -7,6 +7,7 @@ from requests import get
 
 
 VALID_TAG = regex(r'^\w+$')
+FROM_LINK = regex(r'https?://.*imgur\.com/a/(\w+)')
 NON_WORD = regex(r'[^\w\s\-\_]')
 SHRINK = regex(r'[\s-]+')
 HTML = 'https://imgur.com/a/%s/layout/blog'
@@ -127,6 +128,10 @@ def main(what=None, program=None):
     parser.add_argument('-m', '--meta', action='store_true', help='place meta data file in directory')
     parser.add_argument('--author', default='<unknown>', help='title of the album')
     args = parser.parse_args(what)
+
+    assert isinstance(args.tag, str)
+    if FROM_LINK.search(args.tag):
+        args.tag = FROM_LINK.search(args.tag).group(1)
 
     print(args.tag)
 
