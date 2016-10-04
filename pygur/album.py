@@ -21,6 +21,12 @@ class ANSI:
     def erase_line():
         print('\033[K', end='')
 
+    @staticmethod
+    def clear_up(n: int):
+        for _ in range(n):
+            ANSI.up()
+            ANSI.erase_line()
+
 
 class Error(Exception):
     pass
@@ -157,16 +163,22 @@ def main(what=None, program=None):
             'ext': img.extension
         }
 
-        print('Downloading image %r: %s' % (i, img.title))
-        if args.ansi:
-            print('Percent of album: %6.2f%%' % (100 * i / len(album.images)))
-        img.easy(path / (args.format % form))
+        success = False
+        while not success:
+            print('Downloading image %r: %s' % (i, img.title))
+            if args.ansi:
+                print('Percent of album: %6.2f%%' % (100 * i / len(album.images)))
+
+            try:
+                img.easy(path / (args.format % form))
+            except ConnectionError:
+                ANSI.clear_up(3)
+                continue
+            success = True
         count += 1
 
         if args.ansi:
-            for _ in range(4):
-                ANSI.up()
-                ANSI.erase_line()
+            ANSI.clear_up(4)
 
     print('Finished downloading %r images.' % count)
 
