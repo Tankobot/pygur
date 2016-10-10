@@ -7,6 +7,22 @@ Installation
 Run this pip command in your terminal::
 
     $ pip install git+https://github.com/Tankobot/pygur.git
+    
+Usage
+-----
+Pygur has a command line tool for common actions. 
+`-h` can also be used to get information at the terminal.
+
+Downloading
+===========
+
+Albums::
+
+    $ pygur album <tag or link>
+
+Images::
+
+    $ pygur image <tags separated by spaces>
 
 License
 -------
