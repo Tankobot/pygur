@@ -4,7 +4,7 @@ from .image import Image
 
 __author__ = 'Michael Bradley <michael@sigm.io>'
 __copyright__ = 'GNU General Public License v3'
-VERSION = (0, 3, 2)  # semantic version
+VERSION = (0, 3, 3)  # semantic version
 __version__ = '.'.join(map(str, VERSION))  # "major.minor.patch"
 
 

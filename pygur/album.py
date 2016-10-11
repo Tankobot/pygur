@@ -7,7 +7,7 @@ from requests import get
 
 
 VALID_TAG = regex(r'^\w+$')
-FROM_LINK = regex(r'https?://.*imgur\.com/a/(\w+)')
+FROM_LINK = regex(r'imgur\.com/a/(\w+)')
 NON_WORD = regex(r'[^\w\s\-\_]')
 SHRINK = regex(r'[\s-]+')
 HTML = 'https://imgur.com/a/%s/layout/blog'
